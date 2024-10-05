@@ -15,7 +15,7 @@ package main
 import (
 	"github.com/Abraxas-365/toolkit/pkg/errors"
 	"github.com/Abraxas-365/toolkit/pkg/lucia"
-	"github.com/Abraxas-365/toolkit/pkg/lucia/infrastructure"
+	"github.com/Abraxas-365/toolkit/pkg/lucia"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jmoiron/sqlx"
 )
@@ -31,7 +31,7 @@ func main() {
 	defer db.Close()
 
 	// Initialize repository and service
-	repo := infrastructure.NewPostgresRepository(db)
+	repo := lucia.NewPostgresRepository(db)
 	luciaService := lucia.NewService(repo)
 
 	app := fiber.New(fiber.Config{
