@@ -7,9 +7,9 @@ import (
 )
 
 type UserSession struct {
-	ID        string    `json:"id"`
-	ExpiresAt time.Time `json:"expires_at"`
-	UserID    string    `json:"user_id"`
+	ID        string    `json:"id" db:"id"`
+	ExpiresAt time.Time `json:"expires_at" db:"expires_at"`
+	UserID    string    `json:"user_id" db:"user_id"`
 }
 
 func (us *UserSession) IsExpired() bool {
