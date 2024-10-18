@@ -107,3 +107,88 @@ func handleLuciaError(le LuciaError) (int, string) {
 		return fiber.StatusInternalServerError, le.Message
 	}
 }
+
+func IsParseError(err error) bool {
+	e, ok := errors.Cause(err).(ApiError)
+	return ok && e.Type == "ParseError"
+}
+
+// IsUnexpectedError checks if the error is an UnexpectedError
+func IsUnexpectedError(err error) bool {
+	e, ok := errors.Cause(err).(ApiError)
+	return ok && e.Type == "UnexpectedError"
+}
+
+// IsDatabaseError checks if the error is a DatabaseError
+func IsDatabaseError(err error) bool {
+	e, ok := errors.Cause(err).(ApiError)
+	return ok && e.Type == "DatabaseError"
+}
+
+// IsNotFound checks if the error is a NotFound error
+func IsNotFound(err error) bool {
+	e, ok := errors.Cause(err).(ApiError)
+	return ok && e.Type == "NotFound"
+}
+
+// IsBadRequest checks if the error is a BadRequest error
+func IsBadRequest(err error) bool {
+	e, ok := errors.Cause(err).(ApiError)
+	return ok && e.Type == "BadRequest"
+}
+
+// IsForbidden checks if the error is a Forbidden error
+func IsForbidden(err error) bool {
+	e, ok := errors.Cause(err).(ApiError)
+	return ok && e.Type == "Forbidden"
+}
+
+// IsUnauthorized checks if the error is an Unauthorized error
+func IsUnauthorized(err error) bool {
+	e, ok := errors.Cause(err).(ApiError)
+	return ok && e.Type == "Unauthorized"
+}
+
+// IsConflict checks if the error is a Conflict error
+func IsConflict(err error) bool {
+	e, ok := errors.Cause(err).(ApiError)
+	return ok && e.Type == "Conflict"
+}
+
+// IsServiceUnavailable checks if the error is a ServiceUnavailable error
+func IsServiceUnavailable(err error) bool {
+	e, ok := errors.Cause(err).(ApiError)
+	return ok && e.Type == "ServiceUnavailable"
+}
+
+// IsLuciaError checks if the error is a LuciaError
+func IsLuciaError(err error) bool {
+	_, ok := errors.Cause(err).(LuciaError)
+	return ok
+}
+
+// Additional helper functions for specific Lucia error types
+
+// IsLuciaDatabaseError checks if the error is a Lucia database-related error
+func IsLuciaDatabaseError(err error) bool {
+	le, ok := errors.Cause(err).(LuciaError)
+	return ok && (le.Type == "DatabaseConnectionError" || le.Type == "DatabaseQueryError")
+}
+
+// IsLuciaSessionError checks if the error is a Lucia session-related error
+func IsLuciaSessionError(err error) bool {
+	le, ok := errors.Cause(err).(LuciaError)
+	return ok && (le.Type == "UserSessionNotFound" || le.Type == "InvalidSessionId" || le.Type == "SessionExpired")
+}
+
+// IsLuciaAuthError checks if the error is a Lucia authentication-related error
+func IsLuciaAuthError(err error) bool {
+	le, ok := errors.Cause(err).(LuciaError)
+	return ok && (le.Type == "InvalidCredentials" || le.Type == "InvalidToken" || le.Type == "TokenExpired")
+}
+
+// IsLuciaDuplicateUserError checks if the error is a Lucia duplicate user error
+func IsLuciaDuplicateUserError(err error) bool {
+	le, ok := errors.Cause(err).(LuciaError)
+	return ok && le.Type == "DuplicateUserError"
+}

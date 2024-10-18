@@ -1,26 +1,47 @@
 package lucia
 
 import (
+	"time"
+
 	"github.com/Abraxas-365/toolkit/pkg/errors"
 	"github.com/gofiber/fiber/v2"
 )
 
 const SessionCookieName = "auth_session"
 
+// AuthMiddleware creates a middleware that handles session validation and authentication
+type AuthMiddleware struct {
+	service *AuthService
+}
+
+// NewAuthMiddleware creates a new instance of AuthMiddleware
+func NewAuthMiddleware(service *AuthService) *AuthMiddleware {
+	return &AuthMiddleware{service: service}
+}
+
 // SessionMiddleware creates a middleware that validates the session
-func SessionMiddleware(service *Service) fiber.Handler {
+func (am *AuthMiddleware) SessionMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Get the session ID from the cookie
 		sessionID := c.Cookies(SessionCookieName)
 		if sessionID == "" {
-			return errors.NewLuciaError("InvalidSessionId", "No session ID provided")
+			// If no session ID is provided, continue without setting the session
+			return c.Next()
 		}
 
 		// Validate the session
-		session, err := service.ValidateSession(c.Context(), sessionID)
+		session, err := am.service.GetSession(c.Context(), sessionID)
 		if err != nil {
-			// If there's an error, it will be a LuciaError, so we can return it directly
-			return err
+			// If there's an error, clear the invalid session cookie
+			c.ClearCookie(SessionCookieName)
+
+			// Check if it's a "not found" error and return ErrUnauthorized
+			if _, ok := err.(errors.ApiError); ok && err.(errors.ApiError).Type == "NotFound" {
+				return errors.ErrUnauthorized("Session not found")
+			}
+
+			// For other errors, continue without setting the session
+			return c.Next()
 		}
 
 		// If the session is valid, store it in the context for later use
@@ -30,20 +51,39 @@ func SessionMiddleware(service *Service) fiber.Handler {
 	}
 }
 
+// RequireAuth is a middleware that ensures a valid session exists
+func (am *AuthMiddleware) RequireAuth() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		session := GetSession(c)
+		if session == nil {
+			return errors.ErrUnauthorized("Authentication required")
+		}
+		return c.Next()
+	}
+}
+
 // GetSession retrieves the validated session from the context
-func GetSession(c *fiber.Ctx) *UserSession {
-	session, ok := c.Locals("session").(*UserSession)
+func GetSession(c *fiber.Ctx) *Session {
+	session, ok := c.Locals("session").(*Session)
 	if !ok {
 		return nil
 	}
 	return session
 }
 
-// RequireAuth is a middleware that ensures a valid session exists
-func RequireAuth(c *fiber.Ctx) error {
-	session := GetSession(c)
-	if session == nil {
-		return errors.NewLuciaError("Unauthorized", "Authentication required")
-	}
-	return c.Next()
+// SetSessionCookie sets the session cookie
+func SetSessionCookie(c *fiber.Ctx, session *Session) {
+	c.Cookie(&fiber.Cookie{
+		Name:     SessionCookieName,
+		Value:    session.ID,
+		Expires:  time.Unix(session.ExpiresAt, 0),
+		HTTPOnly: true,
+		Secure:   true, // Set to true if using HTTPS
+		SameSite: "Lax",
+	})
+}
+
+// ClearSessionCookie clears the session cookie
+func ClearSessionCookie(c *fiber.Ctx) {
+	c.ClearCookie(SessionCookieName)
 }
