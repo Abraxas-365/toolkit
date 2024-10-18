@@ -1,8 +1,6 @@
 package lucia
 
-import (
-	"context"
-)
+import "context"
 
 type OAuthProvider interface {
 	GetAuthURL(state string) string
@@ -17,29 +15,22 @@ type OAuthToken struct {
 }
 
 type UserInfo struct {
-	ID       string
-	Email    string
-	Name     string
-	Provider string
+	ID             string
+	Email          string
+	Name           string
+	Provider       string
+	ProfilePicture *string
 }
 
-type UserStore interface {
-	GetUserByProviderID(ctx context.Context, provider, providerID string) (*User, error)
-	CreateUser(ctx context.Context, user *User) error
+type UserStore[U User] interface {
+	GetUserByProviderID(ctx context.Context, provider, providerID string) (U, error)
+	CreateUser(ctx context.Context, userInfo *UserInfo) (U, error)
 }
 
 type SessionStore interface {
 	CreateSession(ctx context.Context, session *Session) error
 	GetSession(ctx context.Context, sessionID string) (*Session, error)
 	DeleteSession(ctx context.Context, sessionID string) error
-}
-
-type User struct {
-	ID         string
-	Email      string
-	Name       string
-	ProviderID string
-	Provider   string
 }
 
 type Session struct {

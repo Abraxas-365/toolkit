@@ -63,18 +63,25 @@ func (p *GoogleProvider) GetUserInfo(ctx context.Context, token *OAuthToken) (*U
 	}
 
 	var googleUser struct {
-		ID    string `json:"id"`
-		Email string `json:"email"`
-		Name  string `json:"name"`
+		ID      string `json:"id"`
+		Email   string `json:"email"`
+		Name    string `json:"name"`
+		Picture string `json:"picture"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&googleUser); err != nil {
 		return nil, errors.ErrUnexpected(fmt.Sprintf("Failed to decode user info: %v", err))
 	}
 
-	return &UserInfo{
+	userInfo := &UserInfo{
 		ID:       googleUser.ID,
 		Email:    googleUser.Email,
 		Name:     googleUser.Name,
 		Provider: "google",
-	}, nil
+	}
+
+	if googleUser.Picture != "" {
+		userInfo.ProfilePicture = &googleUser.Picture
+	}
+
+	return userInfo, nil
 }

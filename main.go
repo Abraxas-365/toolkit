@@ -12,23 +12,24 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func main() {
-	// Initialize database connection for session store
-	// db, err := sqlx.Connect("postgres", os.Getenv("DATABASE_URL"))
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer db.Close()
-	//
-	// // Initialize session store
-	// sessionStore := luciastore.NewStoreFromConnection(db)
-	// defer sessionStore.Close()
+type User struct {
+	ID         string
+	Email      string
+	Name       string
+	ProviderID string
+	Provider   string
+}
 
+func (u *User) GetID() string {
+	return u.ID
+}
+
+func main() {
 	// Initialize in-memory user store
 	userStore := NewInMemoryUserStore()
 	sessionStore := NewInMemorySessionStore()
 	// Initialize auth service
-	authService := lucia.NewAuthService(userStore, sessionStore)
+	authService := lucia.NewAuthService[*User](userStore, sessionStore)
 
 	// Initialize Google OAuth provider
 	googleProvider := lucia.NewGoogleProvider(
@@ -133,17 +134,17 @@ func main() {
 
 // InMemoryUserStore is a simple in-memory implementation of UserStore for testing
 type InMemoryUserStore struct {
-	users map[string]*lucia.User
+	users map[string]*User
 	mu    sync.RWMutex
 }
 
 func NewInMemoryUserStore() *InMemoryUserStore {
 	return &InMemoryUserStore{
-		users: make(map[string]*lucia.User),
+		users: make(map[string]*User),
 	}
 }
 
-func (s *InMemoryUserStore) GetUserByProviderID(ctx context.Context, provider, providerID string) (*lucia.User, error) {
+func (s *InMemoryUserStore) GetUserByProviderID(ctx context.Context, provider, providerID string) (*User, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -156,19 +157,27 @@ func (s *InMemoryUserStore) GetUserByProviderID(ctx context.Context, provider, p
 	return nil, errors.ErrNotFound("User not found")
 }
 
-func (s *InMemoryUserStore) CreateUser(ctx context.Context, user *lucia.User) error {
+func (s *InMemoryUserStore) CreateUser(ctx context.Context, userInfo *lucia.UserInfo) (*User, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	user := &User{
+		ID:         lucia.GenerateID(),
+		Email:      userInfo.Email,
+		Name:       userInfo.Name,
+		ProviderID: userInfo.ID,
+		Provider:   userInfo.Provider,
+	}
+
 	if _, exists := s.users[user.ID]; exists {
-		return errors.ErrConflict("User already exists")
+		return nil, errors.ErrConflict("User already exists")
 	}
 
 	s.users[user.ID] = user
-	return nil
+	return user, nil
 }
 
-func (s *InMemoryUserStore) GetUserByID(ctx context.Context, userID string) (*lucia.User, error) {
+func (s *InMemoryUserStore) GetUserByID(ctx context.Context, userID string) (*User, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

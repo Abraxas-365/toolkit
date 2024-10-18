@@ -10,17 +10,17 @@ import (
 const SessionCookieName = "auth_session"
 
 // AuthMiddleware creates a middleware that handles session validation and authentication
-type AuthMiddleware struct {
-	service *AuthService
+type AuthMiddleware[U User] struct {
+	service *AuthService[U]
 }
 
 // NewAuthMiddleware creates a new instance of AuthMiddleware
-func NewAuthMiddleware(service *AuthService) *AuthMiddleware {
-	return &AuthMiddleware{service: service}
+func NewAuthMiddleware[U User](service *AuthService[U]) *AuthMiddleware[U] {
+	return &AuthMiddleware[U]{service: service}
 }
 
 // SessionMiddleware creates a middleware that validates the session
-func (am *AuthMiddleware) SessionMiddleware() fiber.Handler {
+func (am *AuthMiddleware[U]) SessionMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Get the session ID from the cookie
 		sessionID := c.Cookies(SessionCookieName)
@@ -36,8 +36,11 @@ func (am *AuthMiddleware) SessionMiddleware() fiber.Handler {
 			c.ClearCookie(SessionCookieName)
 
 			// Check if it's a "not found" error and return ErrUnauthorized
-			if _, ok := err.(errors.ApiError); ok && err.(errors.ApiError).Type == "NotFound" {
-				return errors.ErrUnauthorized("Session not found")
+			if errors.IsLuciaError(err) {
+				luciaErr := err.(errors.LuciaError)
+				if luciaErr.Type == "UserSessionNotFound" {
+					return errors.ErrUnauthorized("Session not found")
+				}
 			}
 
 			// For other errors, continue without setting the session
@@ -52,7 +55,7 @@ func (am *AuthMiddleware) SessionMiddleware() fiber.Handler {
 }
 
 // RequireAuth is a middleware that ensures a valid session exists
-func (am *AuthMiddleware) RequireAuth() fiber.Handler {
+func (am *AuthMiddleware[U]) RequireAuth() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		session := GetSession(c)
 		if session == nil {
