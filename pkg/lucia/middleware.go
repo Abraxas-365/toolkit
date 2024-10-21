@@ -10,12 +10,12 @@ import (
 const SessionCookieName = "auth_session"
 
 // AuthMiddleware creates a middleware that handles session validation and authentication
-type AuthMiddleware[U User] struct {
+type AuthMiddleware[U AuthUser] struct {
 	service *AuthService[U]
 }
 
 // NewAuthMiddleware creates a new instance of AuthMiddleware
-func NewAuthMiddleware[U User](service *AuthService[U]) *AuthMiddleware[U] {
+func NewAuthMiddleware[U AuthUser](service *AuthService[U]) *AuthMiddleware[U] {
 	return &AuthMiddleware[U]{service: service}
 }
 

@@ -9,18 +9,18 @@ import (
 	"github.com/Abraxas-365/toolkit/pkg/errors"
 )
 
-// User is an interface that any user type must implement
-type User interface {
+// AuthUser is an interface that any user type must implement
+type AuthUser interface {
 	GetID() string
 }
 
-type AuthService[U User] struct {
+type AuthService[U AuthUser] struct {
 	providers    map[string]OAuthProvider
-	userStore    UserStore[U]
+	userStore    AuthUserStore[U]
 	sessionStore SessionStore
 }
 
-func NewAuthService[U User](userStore UserStore[U], sessionStore SessionStore) *AuthService[U] {
+func NewAuthService[U AuthUser](userStore AuthUserStore[U], sessionStore SessionStore) *AuthService[U] {
 	return &AuthService[U]{
 		providers:    make(map[string]OAuthProvider),
 		userStore:    userStore,

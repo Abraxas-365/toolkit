@@ -22,7 +22,7 @@ type UserInfo struct {
 	ProfilePicture *string
 }
 
-type UserStore[U User] interface {
+type AuthUserStore[U AuthUser] interface {
 	GetUserByProviderID(ctx context.Context, provider, providerID string) (U, error)
 	CreateUser(ctx context.Context, userInfo *UserInfo) (U, error)
 }

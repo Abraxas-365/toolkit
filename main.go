@@ -26,10 +26,10 @@ func (u *User) GetID() string {
 
 func main() {
 	// Initialize in-memory user store
-	userStore := NewInMemoryUserStore()
+	authUserStore := NewInMemoryUserStore()
 	sessionStore := NewInMemorySessionStore()
 	// Initialize auth service
-	authService := lucia.NewAuthService[*User](userStore, sessionStore)
+	authService := lucia.NewAuthService[*User](authUserStore, sessionStore)
 
 	// Initialize Google OAuth provider
 	googleProvider := lucia.NewGoogleProvider(
@@ -70,7 +70,7 @@ func main() {
 	// New route to get user info
 	api.Get("/user", func(c *fiber.Ctx) error {
 		session := lucia.GetSession(c)
-		user, err := userStore.GetUserByID(c.Context(), session.UserID)
+		user, err := authUserStore.GetUserByID(c.Context(), session.UserID)
 		if err != nil {
 			return err
 		}
