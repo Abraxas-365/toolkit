@@ -70,7 +70,11 @@ func main() {
 	// New route to get user info
 	api.Get("/user", func(c *fiber.Ctx) error {
 		session := lucia.GetSession(c)
-		user, err := authUserStore.GetUserByID(c.Context(), session.UserID)
+		userId, err := session.UserIDToString()
+		if err != nil {
+			return err
+		}
+		user, err := authUserStore.GetUserByID(c.Context(), userId)
 		if err != nil {
 			return err
 		}
