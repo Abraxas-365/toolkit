@@ -13,7 +13,7 @@ import (
 
 // Client defines the S3 client interface.
 type Client interface {
-	// PresignedUrlGet generates a presigned GET URL for the given key and duration.
+	// GeneratePresignedGetURL generates a presigned GET URL for the given key and duration.
 	GeneratePresignedGetURL(key string, duration time.Duration) (string, error)
 
 	// GeneratePresignedPutURL generates a presigned PUT URL for the given key and duration.
@@ -21,6 +21,9 @@ type Client interface {
 
 	// DeleteFile deletes a file from the S3 bucket using the given key.
 	DeleteFile(key string) error
+
+	// ListFiles lists files in the S3 bucket with pagination support.
+	ListFiles(pageSize int32, continuationToken *string) ([]string, *string, error)
 }
 
 // S3Client defines the structure that implements the Client interface.
@@ -125,3 +128,25 @@ func (c *S3Client) DeleteFile(key string) error {
 
 	return nil
 }
+
+// ListFiles lists files in the S3 bucket with pagination support.
+// The function returns a list of file keys, the next continuation token for pagination, and any error encountered.
+func (c *S3Client) ListFiles(pageSize int32, continuationToken *string) ([]string, *string, error) {
+	var files []string
+
+	output, err := c.s3Client.ListObjectsV2(context.TODO(), &s3.ListObjectsV2Input{
+		Bucket:            aws.String(c.bucket),
+		MaxKeys:           &pageSize,
+		ContinuationToken: continuationToken,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to list files: %v", err)
+	}
+
+	for _, item := range output.Contents {
+		files = append(files, *item.Key)
+	}
+
+	return files, output.NextContinuationToken, nil
+}
+
