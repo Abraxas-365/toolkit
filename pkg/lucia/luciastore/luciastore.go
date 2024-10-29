@@ -69,8 +69,6 @@ func (s *PostgresStore) CreateSession(ctx context.Context, session *lucia.Sessio
 }
 
 func (s *PostgresStore) GetSession(ctx context.Context, sessionID string) (*lucia.Session, error) {
-	fmt.Println("GetSession", sessionID)
-
 	// Create a temporary struct to handle the scanning
 	type dbSession struct {
 		ID        string  `db:"id"`
@@ -100,7 +98,6 @@ func (s *PostgresStore) GetSession(ctx context.Context, sessionID string) (*luci
 		return nil, errors.ErrUnauthorized("Session expired")
 	}
 
-	fmt.Println(session)
 	return session, nil
 }
 
