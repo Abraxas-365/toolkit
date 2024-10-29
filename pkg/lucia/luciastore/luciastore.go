@@ -69,9 +69,19 @@ func (s *PostgresStore) CreateSession(ctx context.Context, session *lucia.Sessio
 }
 
 func (s *PostgresStore) GetSession(ctx context.Context, sessionID string) (*lucia.Session, error) {
+	fmt.Println("GetSession", sessionID)
+
+	// Create a temporary struct to handle the scanning
+	type dbSession struct {
+		ID        string  `db:"id"`
+		UserID    string  `db:"user_id"`    // Specify the exact type you're using in your database
+		ExpiresAt float64 `db:"expires_at"` // EXTRACT(EPOCH FROM ...) returns a float
+	}
+
 	query := `SELECT id, user_id, EXTRACT(EPOCH FROM expires_at) as expires_at FROM sessions WHERE id = $1`
-	var session lucia.Session
-	err := s.db.GetContext(ctx, &session, query, sessionID)
+	var dbSess dbSession
+
+	err := s.db.GetContext(ctx, &dbSess, query, sessionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.ErrNotFound("Session not found")
@@ -79,11 +89,19 @@ func (s *PostgresStore) GetSession(ctx context.Context, sessionID string) (*luci
 		return nil, errors.ErrDatabase(fmt.Sprintf("Failed to get session: %v", err))
 	}
 
+	// Convert to lucia.Session
+	session := &lucia.Session{
+		ID:        dbSess.ID,
+		UserID:    dbSess.UserID, // This will be stored as interface{}
+		ExpiresAt: int64(dbSess.ExpiresAt),
+	}
+
 	if time.Unix(session.ExpiresAt, 0).Before(time.Now()) {
 		return nil, errors.ErrUnauthorized("Session expired")
 	}
 
-	return &session, nil
+	fmt.Println(session)
+	return session, nil
 }
 
 func (s *PostgresStore) DeleteSession(ctx context.Context, sessionID string) error {
