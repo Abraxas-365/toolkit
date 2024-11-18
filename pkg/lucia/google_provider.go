@@ -48,6 +48,20 @@ func (p *GoogleProvider) ExchangeCode(ctx context.Context, code string) (*OAuthT
 }
 
 func (p *GoogleProvider) GetUserInfo(ctx context.Context, token *OAuthToken) (*UserInfo, error) {
+	// First check if token needs refresh
+	if token.NeedsRefresh() {
+		newToken, err := p.RefreshToken(ctx, token.RefreshToken)
+		if err != nil {
+			return nil, err
+		}
+		// Update token with new values
+		token.AccessToken = newToken.AccessToken
+		token.ExpiresIn = newToken.ExpiresIn
+		if newToken.RefreshToken != "" {
+			token.RefreshToken = newToken.RefreshToken
+		}
+	}
+
 	client := p.config.Client(ctx, &oauth2.Token{
 		AccessToken: token.AccessToken,
 	})
@@ -77,6 +91,7 @@ func (p *GoogleProvider) GetUserInfo(ctx context.Context, token *OAuthToken) (*U
 		Email:    googleUser.Email,
 		Name:     googleUser.Name,
 		Provider: "google",
+		Token:    token, // Include the potentially refreshed token
 	}
 
 	if googleUser.Picture != "" {
@@ -84,4 +99,22 @@ func (p *GoogleProvider) GetUserInfo(ctx context.Context, token *OAuthToken) (*U
 	}
 
 	return userInfo, nil
+}
+
+func (p *GoogleProvider) RefreshToken(ctx context.Context, refreshToken string) (*OAuthToken, error) {
+	token := &oauth2.Token{
+		RefreshToken: refreshToken,
+	}
+
+	tokenSource := p.config.TokenSource(ctx, token)
+	newToken, err := tokenSource.Token()
+	if err != nil {
+		return nil, errors.ErrUnauthorized(fmt.Sprintf("Failed to refresh token: %v", err))
+	}
+
+	return &OAuthToken{
+		AccessToken:  newToken.AccessToken,
+		RefreshToken: newToken.RefreshToken,
+		ExpiresIn:    newToken.Expiry.Unix(),
+	}, nil
 }
