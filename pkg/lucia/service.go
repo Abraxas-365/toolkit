@@ -57,6 +57,7 @@ func (s *AuthService[U]) HandleCallback(ctx context.Context, provider, code stri
 	if err != nil {
 		return nil, errors.NewLuciaError("UserInfoError", "Failed to get user info")
 	}
+	userInfo.Token = token
 
 	user, err := s.userStore.GetUserByProviderID(ctx, provider, userInfo.ID)
 	if err != nil {

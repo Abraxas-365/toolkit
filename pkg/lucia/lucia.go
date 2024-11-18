@@ -25,6 +25,7 @@ type UserInfo struct {
 	Name           string
 	Provider       string
 	ProfilePicture *string
+	Token          *OAuthToken
 }
 
 type AuthUserStore[U AuthUser] interface {
