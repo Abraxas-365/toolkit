@@ -36,6 +36,10 @@ func main() {
 		os.Getenv("GOOGLE_CLIENT_ID"),
 		os.Getenv("GOOGLE_CLIENT_SECRET"),
 		os.Getenv("GOOGLE_REDIRECT_URI"),
+		[]string{
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile",
+		},
 	)
 	authService.RegisterProvider("google", googleProvider)
 

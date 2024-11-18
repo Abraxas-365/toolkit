@@ -15,17 +15,14 @@ type GoogleProvider struct {
 	config *oauth2.Config
 }
 
-func NewGoogleProvider(clientID, clientSecret, redirectURI string) *GoogleProvider {
+func NewGoogleProvider(clientID, clientSecret, redirectURI string, scopes []string) *GoogleProvider {
 	return &GoogleProvider{
 		config: &oauth2.Config{
 			ClientID:     clientID,
 			ClientSecret: clientSecret,
 			RedirectURL:  redirectURI,
-			Scopes: []string{
-				"https://www.googleapis.com/auth/userinfo.email",
-				"https://www.googleapis.com/auth/userinfo.profile",
-			},
-			Endpoint: google.Endpoint,
+			Scopes:       scopes,
+			Endpoint:     google.Endpoint,
 		},
 	}
 }
