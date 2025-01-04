@@ -1,6 +1,7 @@
 package s3client
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"time"
@@ -24,6 +25,14 @@ type Client interface {
 
 	// ListFiles lists files in the S3 bucket with pagination support.
 	ListFiles(pageSize int32, continuationToken *string) ([]string, *string, error)
+
+	// UploadFile uploads data directly to S3 with configurable content type
+	UploadFile(ctx context.Context, key string, data []byte, contentType string) error
+
+	// Helper methods for common content types
+	UploadCSV(ctx context.Context, key string, data []byte) error
+	UploadJSON(ctx context.Context, key string, data []byte) error
+	UploadText(ctx context.Context, key string, data []byte) error
 }
 
 // S3Client defines the structure that implements the Client interface.
@@ -130,7 +139,6 @@ func (c *S3Client) DeleteFile(key string) error {
 }
 
 // ListFiles lists files in the S3 bucket with pagination support.
-// The function returns a list of file keys, the next continuation token for pagination, and any error encountered.
 func (c *S3Client) ListFiles(pageSize int32, continuationToken *string) ([]string, *string, error) {
 	var files []string
 
@@ -150,3 +158,37 @@ func (c *S3Client) ListFiles(pageSize int32, continuationToken *string) ([]strin
 	return files, output.NextContinuationToken, nil
 }
 
+// UploadFile uploads data directly to S3 with configurable content type
+func (c *S3Client) UploadFile(ctx context.Context, key string, data []byte, contentType string) error {
+	input := &s3.PutObjectInput{
+		Bucket: aws.String(c.bucket),
+		Key:    aws.String(key),
+		Body:   bytes.NewReader(data),
+	}
+
+	if contentType != "" {
+		input.ContentType = aws.String(contentType)
+	}
+
+	_, err := c.s3Client.PutObject(ctx, input)
+	if err != nil {
+		return fmt.Errorf("failed to upload file: %w", err)
+	}
+
+	return nil
+}
+
+// UploadCSV is a helper method for uploading CSV files
+func (c *S3Client) UploadCSV(ctx context.Context, key string, data []byte) error {
+	return c.UploadFile(ctx, key, data, "text/csv")
+}
+
+// UploadJSON is a helper method for uploading JSON files
+func (c *S3Client) UploadJSON(ctx context.Context, key string, data []byte) error {
+	return c.UploadFile(ctx, key, data, "application/json")
+}
+
+// UploadText is a helper method for uploading plain text files
+func (c *S3Client) UploadText(ctx context.Context, key string, data []byte) error {
+	return c.UploadFile(ctx, key, data, "text/plain")
+}
